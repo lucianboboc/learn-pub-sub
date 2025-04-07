@@ -17,16 +17,3 @@ case "$1" in
         echo "Usage: $0 {start|stop|logs}"
         exit 1
 esac
-
-
-case "$1" in
-    start)
-        echo "Starting RabbitMQ container..."
-    stop)
-        echo "Stopping RabbitMQ container..."
-    logs)
-        echo "Fetching logs for RabbitMQ container..."
-    *)
-        echo "Usage: $0 {start|stop|logs}"
-        exit 1
-esac
