@@ -27,6 +27,8 @@ func main() {
 		return
 	}
 
+	pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.SimpleQueueDurable)
+
 	gamelogic.PrintServerHelp()
 	for {
 		input := gamelogic.GetInput()

@@ -42,6 +42,18 @@ func main() {
 	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
 	gamestate := gamelogic.NewGameState(username)
+	err = pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilDirect,
+		routing.PauseKey+"."+gamestate.GetUsername(),
+		routing.PauseKey,
+		pubsub.SimpleQueueTransient,
+		handlerPause(gamestate),
+	)
+	if err != nil {
+		fmt.Println("Error subscribing to pause messages:", err)
+		return
+	}
 
 	for {
 		input := gamelogic.GetInput()
@@ -79,4 +91,11 @@ func main() {
 	// ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	// defer cancel()
 	// <-ctx.Done()
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
+		gs.HandlePause(ps)
+	}
 }

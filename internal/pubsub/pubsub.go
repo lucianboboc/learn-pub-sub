@@ -26,6 +26,37 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 	})
 }
 
+func SubscribeJSON[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	simpleQueueType SimpleQueueType,
+	handler func(T),
+) error {
+	ch, _, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType)
+	if err != nil {
+		return err
+	}
+
+	newChan, err := ch.Consume(queueName, "", false, false, false, false, nil)
+	if err != nil {
+		return nil
+	}
+
+	go func() {
+		for msg := range newChan {
+			var val T
+			if err := json.Unmarshal(msg.Body, &val); err != nil {
+				handler(val)
+				msg.Ack(false)
+			}
+		}
+	}()
+
+	return nil
+}
+
 func DeclareAndBind(conn *amqp.Connection, exchange, queueName, key string, simpleQueueType SimpleQueueType) (*amqp.Channel, amqp.Queue, error) {
 	ch, err := conn.Channel()
 	if err != nil {
@@ -35,8 +66,8 @@ func DeclareAndBind(conn *amqp.Connection, exchange, queueName, key string, simp
 	queue, err := ch.QueueDeclare(
 		queueName,
 		simpleQueueType == SimpleQueueDurable,
-		simpleQueueType == SimpleQueueTransient,
-		simpleQueueType == SimpleQueueTransient,
+		simpleQueueType != SimpleQueueDurable,
+		simpleQueueType != SimpleQueueDurable,
 		false,
 		nil,
 	)
