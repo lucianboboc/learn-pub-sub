@@ -1,10 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"os/signal"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -52,10 +49,10 @@ func main() {
 		}
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
-	defer stop()
-	<-ctx.Done()
-	fmt.Println("Received shutdown signal, shutting down...")
+	// ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	// defer stop()
+	// <-ctx.Done()
+	// fmt.Println("Received shutdown signal, shutting down...")
 }
 
 func sendMessage(ch *amqp.Channel, message string) {
