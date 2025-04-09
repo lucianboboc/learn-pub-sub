@@ -1,7 +1,9 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 
@@ -23,13 +25,14 @@ const (
 	NackRequeue
 )
 
-func SubscribeJSON[T any](
+func Subscribe[T any](
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
 	simpleQueueType SimpleQueueType,
 	handler func(T) Acktype,
+	unmarshaller func([]byte) (T, error),
 ) error {
 	ch, queue, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType)
 	if err != nil {
@@ -47,12 +50,6 @@ func SubscribeJSON[T any](
 	)
 	if err != nil {
 		return fmt.Errorf("could not consume messages: %v", err)
-	}
-
-	unmarshaller := func(data []byte) (T, error) {
-		var target T
-		err := json.Unmarshal(data, &target)
-		return target, err
 	}
 
 	go func() {
@@ -129,4 +126,30 @@ func PublishJSON[T any](ch *amqp.Channel, exchange, key string, val T) error {
 		ContentType: "application/json",
 		Body:        dat,
 	})
+}
+
+func PublishGob[T any](ch *amqp.Channel, exchange, key string, val T) error {
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(val)
+	if err != nil {
+		return err
+	}
+
+	return ch.PublishWithContext(context.Background(), exchange, key, false, false, amqp.Publishing{
+		ContentType: "application/gob",
+		Body:        buf.Bytes(),
+	})
+}
+
+func JSONUmarshaler[T any](data []byte) (T, error) {
+	var target T
+	err := json.Unmarshal(data, &target)
+	return target, err
+}
+
+func GobUmarshaler[T any](data []byte) (T, error) {
+	buff := bytes.NewBuffer(data)
+	var target T
+	err := gob.NewDecoder(buff).Decode(&target)
+	return target, err
 }
