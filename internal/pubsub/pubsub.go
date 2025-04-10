@@ -39,6 +39,15 @@ func Subscribe[T any](
 		return fmt.Errorf("could not declare and bind queue: %v", err)
 	}
 
+	err = ch.Qos(
+		10,    // prefetch count
+		0,     // prefetch size
+		false, // prefetch global
+	)
+	if err != nil {
+		return fmt.Errorf("could not declare prefetch count: %v", err)
+	}
+
 	msgs, err := ch.Consume(
 		queue.Name, // queue
 		"",         // consumer
